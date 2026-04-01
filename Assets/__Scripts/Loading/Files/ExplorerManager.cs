@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using SFB;
 using System.IO;
+using System;
 
 public class ExplorerManager : MonoBehaviour, IPointerDownHandler
 {
@@ -72,10 +73,17 @@ public class ExplorerManager : MonoBehaviour, IPointerDownHandler
 
         string[] paths = StandaloneFileBrowser.OpenFilePanel("Select Map", openLocation, extensions, false);
         
-        if(paths.Length > 0)
+        if(paths.Length > 0 && !string.IsNullOrEmpty(paths[0]))
         {
-            string directory = new FileInfo(paths[0]).Directory.FullName;
-            pathLoader.SetPreviousPath(directory);
+            try
+            {
+                string directory = new FileInfo(paths[0]).Directory.FullName;
+                pathLoader.SetPreviousPath(directory);
+            }
+            catch(Exception err)
+            {
+                Debug.LogError($"Failed to save previous path with error: {err.Message}, {err.StackTrace}");
+            }
             mapLoader.LoadMapInput(paths[0]);
         }
         else Debug.Log("No path selected!");
