@@ -197,7 +197,7 @@ public static class RingManager
 }
 
 
-public class RingRotationEvent : LightEvent
+public class RingRotationEvent : MapElement
 {
     public const float FixedDeltaTime = 1f / 60f;
 
@@ -215,21 +215,21 @@ public class RingRotationEvent : LightEvent
 
     public bool CustomDirection = false;
     public bool CustomRotation = false;
+    public bool CustomSpeed = false;
+    public bool CustomProp = false;
     public bool CustomStep = false;
 
-    private bool RotateClockwise;
+    public bool RotateClockwise;
 
 
     public RingRotationEvent() {}
 
-    public RingRotationEvent(BeatmapBasicBeatmapEvent beatmapEvent, bool bigRing)
+    public RingRotationEvent(BeatmapBasicBeatmapEvent beatmapEvent)
     {
         Beat = beatmapEvent.b;
-        Type = (LightEventType)beatmapEvent.et;
-        Value = (LightEventValue)beatmapEvent.i;
-        FloatValue = beatmapEvent.f;
-        Speed = bigRing ? RingManager.DefaultBigRingRotationSpeed : RingManager.DefaultSmallRingRotationSpeed;
-        Prop = bigRing ? RingManager.DefaultBigRingProp : RingManager.DefaultSmallRingProp;
+        // Type = (LightEventType)beatmapEvent.et;
+        // Value = (LightEventValue)beatmapEvent.i;
+        // FloatValue = beatmapEvent.f;
 
         if(beatmapEvent.customData != null)
         {
@@ -241,16 +241,29 @@ public class RingRotationEvent : LightEvent
             }
             if(customData.rotation != null)
             {
-                Rotation = Mathf.Abs((float)customData.rotation);
+                Rotation = (float)customData.rotation;
                 CustomRotation = true;
+            }
+            if(customData.speed != null)
+            {
+                Speed = (float)customData.speed;
+                CustomSpeed = true;
+            }
+            if(customData.prop != null)
+            {
+                Prop = (float)customData.prop;
+                CustomProp = true;
             }
             if(customData.step != null)
             {
                 Step = (float)customData.step;
                 CustomStep = true;
             }
-            Prop = customData.prop ?? Prop;
-            Speed = customData.speed ?? Speed;
+        }
+
+        if(!CustomDirection)
+        {
+            RotateClockwise = UnityEngine.Random.value >= 0.5f;
         }
 
         if(Prop == 0)
@@ -261,21 +274,49 @@ public class RingRotationEvent : LightEvent
     }
 
 
+    public RingRotationEvent(RingRotationEvent original)
+    {
+        Time = original.Time;
+
+        Rotation = original.Rotation;
+        Speed = original.Speed;
+        Prop = original.Prop;
+        Step = original.Step;
+
+        TargetAngle = original.TargetAngle;
+        StartAngle = original.StartAngle;
+        StartStep = original.StartStep;
+
+        Parity = original.Parity;
+
+        CustomDirection = original.CustomDirection;
+        CustomRotation = original.CustomRotation;
+        CustomSpeed = original.CustomSpeed;
+        CustomProp = original.CustomProp;
+        CustomStep = original.CustomStep;
+
+        RotateClockwise = original.RotateClockwise;
+    }
+
+
+    public void SetDefaultSpeedAndProp(bool bigRing)
+    {
+        if(!CustomSpeed)
+        {
+            Speed = bigRing ? RingManager.DefaultBigRingRotationSpeed : RingManager.DefaultSmallRingRotationSpeed;
+        }
+        if(!CustomProp)
+        {
+            Prop = bigRing ? RingManager.DefaultBigRingProp : RingManager.DefaultSmallRingProp;
+        }
+    }
+
+
     public void InitializeValues(float startRotation, float defaultRotationAmount, float defaultMaxStep)
     {
-        //Randomize the rotation and step values unless there are custom values set
-        if(!CustomDirection)
-        {
-            RotateClockwise = UnityEngine.Random.value >= 0.5f;
-        }
         if(!CustomRotation)
         {
             Rotation = defaultRotationAmount;
-        }
-
-        if(RotateClockwise)
-        {
-            Rotation = -Rotation;
         }
 
         if(!CustomStep)
@@ -283,7 +324,8 @@ public class RingRotationEvent : LightEvent
             Step = UnityEngine.Random.Range(-defaultMaxStep, defaultMaxStep);
         }
 
-        TargetAngle = startRotation + Rotation;
+        float angleChange = RotateClockwise ? -Rotation : Rotation;
+        TargetAngle = startRotation + angleChange;
     }
 
 
