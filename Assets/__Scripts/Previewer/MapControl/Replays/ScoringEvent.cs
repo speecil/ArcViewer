@@ -116,14 +116,14 @@ public class ScoringEvent : MapElement
             PreSwingAmount = 1f;
             MaxSwingScore = ScoreManager.MaxNoteScore;
         }
-        else if(scoringType == ScoringType.ArcHeadArcTail)
+        else if(scoringType == ScoringType.ArcHeadArcTail || scoringType == ScoringType.ChainHeadArcTail)
         {
             //Arc head/tails get both pre and post swing for free
             PreSwingAmount = 1f;
             PostSwingAmount = 1f;
             MaxSwingScore = ScoreManager.MaxNoteScore;
         }
-        else if(scoringType == ScoringType.ChainHead || scoringType == ScoringType.ChainHeadArcTail)
+        else if(scoringType == ScoringType.ChainHead)
         {
             //Chain heads don't get post swing points at all
             PostSwingAmount = 0f;

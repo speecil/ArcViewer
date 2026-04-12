@@ -243,6 +243,7 @@ public class DifficultyBeatmapCustomDataV2
 {
     public string _difficultyLabel;
     public string[] _requirements;
+    public bool? _oneSaber;
 
     //SongCore color overrides
     public BeatmapInfoColorV2 _colorLeft;
@@ -262,6 +263,7 @@ public class DifficultyBeatmapCustomDataV2
         {
             difficultyLabel = _difficultyLabel,
             requirements = _requirements,
+            oneSaber = _oneSaber,
             colorLeft = _colorLeft,
             colorRight = _colorRight,
             envColorLeft = _envColorLeft,

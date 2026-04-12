@@ -275,6 +275,10 @@ public class Difficulty
     public string[] requirements;
     public NullableColorPalette songCoreColors;
 
+    public bool forceOneSaber = false;
+
+    public bool isOneSaber => forceOneSaber || characteristic == DifficultyCharacteristic.OneSaber;
+
 
     public static Difficulty Empty => new Difficulty
     {
@@ -289,7 +293,8 @@ public class Difficulty
         lighters = new string[0],
         label = "Expert+",
         requirements = new string[0],
-        songCoreColors = null
+        songCoreColors = null,
+        forceOneSaber = false
     };
 
 

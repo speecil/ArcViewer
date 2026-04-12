@@ -27,7 +27,7 @@ public class ReplayManager : MonoBehaviour
     public static string[] Modifiers = new string[0];
 
     //This will need to be updated for the new songcore features but it'll do for now
-    public static bool OneSaber => IsReplayMode && BeatmapManager.CurrentDifficulty.characteristic == DifficultyCharacteristic.OneSaber;
+    public static bool OneSaber => IsReplayMode && BeatmapManager.CurrentDifficulty.isOneSaber;
     public static bool LeftHandedMode => IsReplayMode && CurrentReplay.info.leftHanded;
 
     public static float ReplayTimeScale { get; private set; }

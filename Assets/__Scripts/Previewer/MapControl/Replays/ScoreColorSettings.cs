@@ -163,21 +163,9 @@ public class ScoreColorSettings
     
     public ScoreColorSettings(HsvConfig config)
     {
-        switch(config.displayMode)
+        if(!Enum.TryParse(config.displayMode, true, out formatMode))
         {
-            case "format":
-                formatMode = FormatMode.Format;
-                break;
-            case "numeric":
-                formatMode = FormatMode.Numeric;
-                break;
-            case "textOnly":
-                formatMode = FormatMode.TextOnly;
-                break;
-            case "scoreOnTop":
-            default:
-                formatMode = FormatMode.ScoreOnTop;
-                break;
+            formatMode = FormatMode.Numeric;
         }
 
         timeDependencyDecimals = Mathf.Clamp(config.timeDependencyDecimalPrecision, 0, 99);
@@ -217,7 +205,8 @@ public class ScoreColorSettings
         Format,
         Numeric,
         TextOnly,
-        ScoreOnTop
+        ScoreOnTop,
+        Directions
     }
 }
 

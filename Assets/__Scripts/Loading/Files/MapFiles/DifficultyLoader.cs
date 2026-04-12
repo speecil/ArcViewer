@@ -263,6 +263,7 @@ public static class DifficultyLoader
     {
         difficulty.requirements = beatmap.customData?.requirements ?? new string[0];
         difficulty.label = beatmap.customData?.difficultyLabel ?? Difficulty.DiffLabelFromRank(difficulty.difficultyRank);
+        difficulty.forceOneSaber = beatmap.customData?.oneSaber ?? false;
         difficulty.songCoreColors = ColorPaletteFromCustomData(beatmap.customData);
     }
 

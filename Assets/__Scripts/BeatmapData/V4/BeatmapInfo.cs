@@ -306,6 +306,7 @@ public class DifficultyBeatmapCustomData
     //This is all just a placeholder for now to carry over converted custom data
     public string difficultyLabel;
     public string[] requirements;
+    public bool? oneSaber;
 
     //SongCore color overrides
     public BeatmapInfoColorV2 colorLeft;
