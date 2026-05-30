@@ -627,13 +627,6 @@ public class MapLoader : MonoBehaviour
 
         sourceInfo?.ApplyTo(replay);
 
-        // default to beatleader source for replays loaded without an API flow
-        if(sourceInfo == null)
-        {
-            sourceInfo = BeatLeaderSource.Create();
-            ReplayManager.SourceInfo = sourceInfo;
-        }
-
         ReplayManager.SetReplay(replay);
 
         Task sourceDataTask = LoadSourceDataAsync(sourceInfo, replay);
@@ -663,13 +656,13 @@ public class MapLoader : MonoBehaviour
         }
         else if(string.IsNullOrEmpty(replay.info?.hash) || replay.info.hash.Length < 40)
         {
-            if(!sourceInfo.HasFallbackMap)
+            if(sourceInfo != null && !sourceInfo.HasFallbackMap)
             {
                 LoadingMessage = "Loading player profile";
                 yield return new WaitUntil(() => sourceDataTask.IsCompleted);
             }
 
-            if(sourceInfo.HasFallbackMap)
+            if(sourceInfo != null && sourceInfo.HasFallbackMap)
             {
                 if(!string.IsNullOrEmpty(sourceInfo.FallbackMapID))
                 {
@@ -687,7 +680,7 @@ public class MapLoader : MonoBehaviour
 
     private static Task LoadSourceDataAsync(ReplaySourceInfo sourceInfo, Replay replay)
     {
-        return sourceInfo.LoadSourceData?.Invoke(replay) ?? Task.CompletedTask;
+        return sourceInfo?.LoadSourceData?.Invoke(replay) ?? Task.CompletedTask;
     }
 
 
@@ -819,13 +812,6 @@ public class MapLoader : MonoBehaviour
     }
 
 
-    public IEnumerator LoadReplayIDCoroutine(string id, string mapURL = null, string mapID = null, bool noProxy = false)
-    {
-        yield return LoadReplayFromScoreCoroutine(
-            ReplaySourceType.BeatLeader, id, mapURL, mapID, noProxy);
-    }
-
-
     public IEnumerator LoadScoreSaberReplayIDCoroutine(string id, string mapURL = null, string mapID = null, bool noProxy = false)
     {
         yield return LoadReplayFromScoreCoroutine(
@@ -838,35 +824,13 @@ public class MapLoader : MonoBehaviour
         Loading = true;
         Debug.Log($"Searching for replay from score ID: {id}");
 
-#if !UNITY_WEBGL || UNITY_EDITOR
-        CachedFile cachedFile = CacheManager.GetCachedReplay(null, id);
-        if(!string.IsNullOrEmpty(cachedFile?.FilePath))
-        {
-            Debug.Log("Found replay in cache.");
-            UrlArgHandler.LoadedReplayID = id;
-            StartCoroutine(LoadReplayDirectoryCoroutine(cachedFile.FilePath, cachedFile.ExtraData));
-            yield break;
-        }
-#endif
-
         LoadingMessage = "Fetching replay";
 
-        Task<ResolvedScore> beatLeaderTask = ResolveReplayScoreAsync(
-            ReplaySourceType.BeatLeader, id, mapURL, mapID, false);
-        yield return new WaitUntil(() => beatLeaderTask.IsCompleted);
+        Task<ResolvedScore> scoreSaberTask = ResolveReplayScoreAsync(
+            ReplaySourceType.ScoreSaber, id, mapURL, mapID, false);
+        yield return new WaitUntil(() => scoreSaberTask.IsCompleted);
 
-        ReplaySourceType sourceType = ReplaySourceType.BeatLeader;
-        ResolvedScore resolved = beatLeaderTask.Result;
-
-        if(resolved == null)
-        {
-            Task<ResolvedScore> scoreSaberTask = ResolveReplayScoreAsync(
-                ReplaySourceType.ScoreSaber, id, mapURL, mapID, false);
-            yield return new WaitUntil(() => scoreSaberTask.IsCompleted);
-
-            sourceType = ReplaySourceType.ScoreSaber;
-            resolved = scoreSaberTask.Result;
-        }
+        ResolvedScore resolved = scoreSaberTask.Result;
 
         if(resolved == null || string.IsNullOrEmpty(resolved.ReplayURL))
         {
@@ -876,20 +840,15 @@ public class MapLoader : MonoBehaviour
             yield break;
         }
 
-        if(sourceType == ReplaySourceType.ScoreSaber)
-        {
-            UrlArgHandler.LoadedSSScoreId = id;
-        }
-        else UrlArgHandler.LoadedReplayID = id;
+        UrlArgHandler.LoadedSSScoreId = id;
 
         if(resolved.SourceInfo != null)
         {
             ReplayManager.SourceInfo = resolved.SourceInfo;
         }
 
-        string replayID = sourceType == ReplaySourceType.BeatLeader ? id : null;
         Task<PreparedMapLoad> mapTask = PrepareMapLoadAsync(resolved, noProxy);
-        StartCoroutine(LoadReplayURLCoroutine(resolved.ReplayURL, replayID, resolved.MapURL, resolved.MapID, noProxy, mapTask));
+        StartCoroutine(LoadReplayURLCoroutine(resolved.ReplayURL, null, resolved.MapURL, resolved.MapID, noProxy, mapTask));
     }
 
 
@@ -897,19 +856,6 @@ public class MapLoader : MonoBehaviour
     {
         Loading = true;
         Debug.Log($"Searching for replay from {sourceType} score ID: {id}");
-
-#if !UNITY_WEBGL || UNITY_EDITOR
-        if(sourceType == ReplaySourceType.BeatLeader)
-        {
-            CachedFile cachedFile = CacheManager.GetCachedReplay(null, id);
-            if(!string.IsNullOrEmpty(cachedFile?.FilePath))
-            {
-                Debug.Log("Found replay in cache.");
-                StartCoroutine(LoadReplayDirectoryCoroutine(cachedFile.FilePath, cachedFile.ExtraData));
-                yield break;
-            }
-        }
-#endif
 
         LoadingMessage = $"Fetching replay from {sourceType}";
 
@@ -929,9 +875,8 @@ public class MapLoader : MonoBehaviour
             ReplayManager.SourceInfo = resolved.SourceInfo;
         }
 
-        string replayID = sourceType == ReplaySourceType.BeatLeader ? id : null;
         Task<PreparedMapLoad> mapTask = PrepareMapLoadAsync(resolved, noProxy);
-        StartCoroutine(LoadReplayURLCoroutine(resolved.ReplayURL, replayID, resolved.MapURL, resolved.MapID, noProxy, mapTask));
+        StartCoroutine(LoadReplayURLCoroutine(resolved.ReplayURL, null, resolved.MapURL, resolved.MapID, noProxy, mapTask));
     }
 
 
@@ -940,7 +885,6 @@ public class MapLoader : MonoBehaviour
     {
         return sourceType switch
         {
-            ReplaySourceType.BeatLeader => BeatLeaderSource.ResolveScoreAsync(id, mapURL, mapID, showErrors),
             ReplaySourceType.ScoreSaber => ScoreSaberSource.ResolveScoreAsync(id, mapURL, mapID, showErrors),
             _ => Task.FromResult<ResolvedScore>(null)
         };
@@ -1065,7 +1009,6 @@ public class MapLoader : MonoBehaviour
         if(!ReplayManager.IsReplayMode)
         {
             HotReloader.loadedMapPath = null;
-            UrlArgHandler.LoadedReplayID = null;
         }
         UrlArgHandler.ignoreMapForSharing = false;
 
@@ -1109,8 +1052,6 @@ public class MapLoader : MonoBehaviour
             string replayInput = input.Trim();
             const string scoreSaberPrefix = "ss:";
             const string scoreSaberLongPrefix = "scoresaber:";
-            const string beatLeaderPrefix = "bl:";
-            const string beatLeaderLongPrefix = "beatleader:";
 
             if(replayInput.StartsWith(scoreSaberPrefix, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -1130,28 +1071,6 @@ public class MapLoader : MonoBehaviour
                 {
                     StartCoroutine(LoadScoreSaberReplayIDCoroutine(scoreID));
                     UrlArgHandler.LoadedSSScoreId = scoreID;
-                    return;
-                }
-            }
-
-            if(replayInput.StartsWith(beatLeaderPrefix, StringComparison.InvariantCultureIgnoreCase))
-            {
-                string scoreID = replayInput[beatLeaderPrefix.Length..].Trim();
-                if(!string.IsNullOrEmpty(scoreID) && scoreID.All(char.IsDigit))
-                {
-                    StartCoroutine(LoadReplayIDCoroutine(scoreID));
-                    UrlArgHandler.LoadedReplayID = scoreID;
-                    return;
-                }
-            }
-
-            if(replayInput.StartsWith(beatLeaderLongPrefix, StringComparison.InvariantCultureIgnoreCase))
-            {
-                string scoreID = replayInput[beatLeaderLongPrefix.Length..].Trim();
-                if(!string.IsNullOrEmpty(scoreID) && scoreID.All(char.IsDigit))
-                {
-                    StartCoroutine(LoadReplayIDCoroutine(scoreID));
-                    UrlArgHandler.LoadedReplayID = scoreID;
                     return;
                 }
             }

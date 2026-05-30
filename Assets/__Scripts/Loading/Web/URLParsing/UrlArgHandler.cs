@@ -7,10 +7,14 @@ using UnityEngine;
 
 public class UrlArgHandler : MonoBehaviour
 {
-    public const string ArcViewerName = "ArcViewer";
-    public const string ArcViewerURL = "https://allpoland.github.io/ArcViewer/";
-    public const string OldBeatLeaderViewerURL = "https://replay.beatleader.xyz/";
-    public const string BeatLeaderViewerURL = "https://replay.beatleader.com/";
+    public const string ArcViewerName = "ScoreSaber Replay";
+    private const string DefaultArcViewerURL = "https://scoresaber.com/";
+    private const string ArcViewerURLEnv = "ARCVIEWER_BASE_URL";
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")]
+    private static extern string GetArcViewerEnv(string name);
+#endif
 
     [DllImport("__Internal")]
     public static extern string GetParameters();
@@ -42,19 +46,6 @@ public class UrlArgHandler : MonoBehaviour
         }
     }
 
-    private static string _loadedReplayID;
-    public static string LoadedReplayID
-    {
-        get => _loadedReplayID;
-
-        set
-        {
-            _loadedReplayID = value;
-            _loadedReplayURL = null;
-            _loadedSSScoreId = null;
-        }
-    }
-
     private static string _loadedReplayURL;
     public static string LoadedReplayURL
     {
@@ -63,7 +54,6 @@ public class UrlArgHandler : MonoBehaviour
         set
         {
             _loadedReplayURL = value;
-            _loadedReplayID = null;
             _loadedSSScoreId = null;
         }
     }
@@ -76,7 +66,6 @@ public class UrlArgHandler : MonoBehaviour
         set
         {
             _loadedSSScoreId = value;
-            _loadedReplayID = null;
             _loadedReplayURL = null;
         }
     }
@@ -92,7 +81,6 @@ public class UrlArgHandler : MonoBehaviour
 #if !UNITY_WEBGL || UNITY_EDITOR
     private static string mapPath;
 #endif
-    private static string replayID;
     private static string replayURL;
     private static string ssScoreId;
     private static float startTime;
@@ -107,6 +95,31 @@ public class UrlArgHandler : MonoBehaviour
     private static string settingsOverride;
 
     [SerializeField] private MapLoader mapLoader;
+
+    public static string ArcViewerURL => GetArcViewerURL();
+
+    public static bool IsArcViewerURL(string url)
+    {
+        return !string.IsNullOrEmpty(url)
+            && (url.StartsWith(ArcViewerURL, StringComparison.InvariantCultureIgnoreCase)
+                || url.StartsWith(DefaultArcViewerURL, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+
+    private static string GetArcViewerURL()
+    {
+        string url = null;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        url = GetArcViewerEnv(ArcViewerURLEnv);
+#endif
+
+        if(string.IsNullOrWhiteSpace(url))
+        {
+            url = DefaultArcViewerURL;
+        }
+
+        return url.EndsWith("/") ? url : $"{url}/";
+    }
 
 
     private void ParseParameter(string name, string value)
@@ -124,13 +137,9 @@ public class UrlArgHandler : MonoBehaviour
             case "url":
                 mapURL = value;
                 break;
-            case "scoreID":
-                replayID = value;
-                break;
             case "replayURL":
                 replayURL = value;
                 break;
-            case "scoreId":
             case "ssScoreId":
             case "ssScoreID":
                 ssScoreId = value;
@@ -182,24 +191,11 @@ public class UrlArgHandler : MonoBehaviour
             mapURL = null;
         }
 
-        if(!string.IsNullOrEmpty(replayURL) && !string.IsNullOrEmpty(replayID))
-        {
-            replayURL = null;
-        }
-
         if(!string.IsNullOrEmpty(ssScoreId))
         {
             StartCoroutine(mapLoader.LoadScoreSaberReplayIDCoroutine(ssScoreId, mapURL, mapID, noProxy));
             LoadedSSScoreId = ssScoreId;
 
-            setTime = true;
-        }
-        else if(!string.IsNullOrEmpty(replayID))
-        {
-            StartCoroutine(mapLoader.LoadReplayIDCoroutine(replayID, mapURL, mapID, noProxy));
-            LoadedReplayID = replayID;
-
-            //Don't set the diff cause that depends on the replay
             setTime = true;
         }
         else if(!string.IsNullOrEmpty(replayURL))
@@ -405,7 +401,6 @@ public class UrlArgHandler : MonoBehaviour
         diffRank = null;
         noProxy = false;
         replayURL = "";
-        replayID = "";
         ssScoreId = "";
 
         uiOff = false;

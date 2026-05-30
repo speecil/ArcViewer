@@ -27,6 +27,9 @@
 .vs/
 .vscode/
 
+# Local secrets
+.secrets/
+
 # Gradle cache directory
 .gradle/
 

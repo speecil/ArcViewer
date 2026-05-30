@@ -133,7 +133,7 @@ public class PlayerInfoPanel : MonoBehaviour
         ReplaySourceInfo source = ReplayManager.SourceInfo;
         if(source != null && source.HasPlayerProfile)
         {
-            Application.OpenURL(source.PlayerProfileURL);
+            ExternalLinkOpener.Open(source.PlayerProfileURL);
         }
     }
 

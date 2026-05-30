@@ -9,6 +9,7 @@ using UnityEngine.Networking;
 #pragma warning disable 1998
 public static class BeatLeaderApi
 {
+    private const string ApiBaseURL = "https://api.beatleader.com/";
     private const string ScoreDirect = "score/";
     private const string UserDirect = "player/";
     private const string LeaderboardDirect = "leaderboards/hash/";
@@ -16,7 +17,7 @@ public static class BeatLeaderApi
 
     public static async Task<BeatLeaderScore> ScoreFromID(string scoreID, bool showErrors = true)
     {
-        string url = string.Concat(ApiConfig.BeatLeaderApiURL, ScoreDirect, scoreID);
+        string url = string.Concat(ApiBaseURL, ScoreDirect, scoreID);
 #if UNITY_WEBGL && !UNITY_EDITOR
         url = WebLoader.GetCorsURL(url);
 #endif
@@ -56,7 +57,7 @@ public static class BeatLeaderApi
 
     public static async Task<BeatLeaderUser> UserFromID(string userID)
     {
-        string url = string.Concat(ApiConfig.BeatLeaderApiURL, UserDirect, userID);
+        string url = string.Concat(ApiBaseURL, UserDirect, userID);
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         url = WebLoader.GetCorsURL(url);
@@ -96,7 +97,7 @@ public static class BeatLeaderApi
 
     public static async Task<BeatLeaderLeaderboardResponse> LeaderboardFromHash(string hash)
     {
-        string url = string.Concat(ApiConfig.BeatLeaderApiURL, LeaderboardDirect, hash);
+        string url = string.Concat(ApiBaseURL, LeaderboardDirect, hash);
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         url = WebLoader.GetCorsURL(url);

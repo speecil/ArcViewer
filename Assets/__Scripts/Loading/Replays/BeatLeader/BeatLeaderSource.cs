@@ -4,6 +4,8 @@ using UnityEngine;
 
 public static class BeatLeaderSource
 {
+    private const string BaseURL = "https://beatleader.com/";
+
     public static ReplaySourceInfo Create()
     {
         ReplaySourceInfo info = new ReplaySourceInfo
@@ -104,7 +106,7 @@ public static class BeatLeaderSource
 
         if(!string.IsNullOrEmpty(user.id))
         {
-            source.PlayerProfileURL = $"{ApiConfig.BeatLeaderBaseURL}u/{user.id}";
+            source.PlayerProfileURL = $"{BaseURL}u/{user.id}";
         }
 
         if(user.profileSettings != null
@@ -125,7 +127,7 @@ public static class BeatLeaderSource
     {
         if(!string.IsNullOrEmpty(leaderboardID))
         {
-            source.LeaderboardURL = $"{ApiConfig.BeatLeaderBaseURL}leaderboard/global/{leaderboardID}";
+            source.LeaderboardURL = $"{BaseURL}leaderboard/global/{leaderboardID}";
         }
     }
 }

@@ -2,43 +2,50 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public static class ApiConfig
 {
-    private const string DefaultBeatLeaderBaseURL = "https://beatleader.com/";
+    private const string ScoreSaberBaseURLEnv = "ARCVIEWER_SCORESABER_BASE_URL";
+    private const string ScoreSaberApiURLEnv = "ARCVIEWER_SCORESABER_API_URL";
+
     private const string DefaultScoreSaberBaseURL = "https://scoresaber.com/";
 
-    public static readonly string BeatLeaderBaseURL = GetURL(DefaultBeatLeaderBaseURL);
-    public static readonly string ScoreSaberBaseURL = GetURL(DefaultScoreSaberBaseURL);
-    public static readonly string BeatLeaderApiURL = GetSubdomainURL(BeatLeaderBaseURL, "api");
-    public static readonly string ScoreSaberApiURL = GetPathURL(ScoreSaberBaseURL, "api/v2/");
+    public static readonly string ScoreSaberBaseURL = GetURL(ScoreSaberBaseURLEnv, DefaultScoreSaberBaseURL);
+    public static readonly string ScoreSaberApiURL = GetURL(
+        ScoreSaberApiURLEnv,
+        GetPathURL(ScoreSaberBaseURL, "api/v2/"));
 
     public static readonly string[] CorsURLs =
     {
-        BeatLeaderBaseURL,
-        BeatLeaderApiURL,
         ScoreSaberBaseURL,
         ScoreSaberApiURL
     };
 
-    private static string GetURL(string defaultURL)
-    {
-        return defaultURL.EndsWith("/") ? defaultURL : $"{defaultURL}/";
-    }
+#if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")]
+    private static extern string GetArcViewerEnv(string name);
+#endif
 
-    private static string GetSubdomainURL(string baseURL, string subdomain)
+    private static string GetURL(string envName, string defaultURL)
     {
-        Uri uri = new Uri(baseURL);
-        UriBuilder builder = new UriBuilder(uri)
+        string url = null;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        url = GetArcViewerEnv(envName);
+#else
+        url = Environment.GetEnvironmentVariable(envName);
+#endif
+
+        if(string.IsNullOrWhiteSpace(url))
         {
-            Host = $"{subdomain}.{uri.Host}",
-            Path = ""
-        };
+            url = defaultURL;
+        }
 
-        return builder.Uri.ToString();
+        return url.EndsWith("/") ? url : $"{url}/";
     }
 
     private static string GetPathURL(string baseURL, string path)
@@ -58,12 +65,6 @@ public class WebLoader
     {
         "https://r2cdn.beatsaver.com",
         "https://cdn.beatsaver.com",
-        "https://api.beatleader.xyz",
-        "https://cdn.replays.beatleader.xyz/",
-        "https://api.beatleader.com",
-        "https://cdn.replays.beatleader.com/",
-        "https://cdn.songs.beatleader.xyz/",
-        "https://cdn.songs.beatleader.com/",
         "https://scoresaber.com",
         "https://cdn.scoresaber.com"
     };

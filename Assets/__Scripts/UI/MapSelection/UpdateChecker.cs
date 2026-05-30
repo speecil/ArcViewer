@@ -8,10 +8,10 @@ using UnityEngine.Networking;
 public class UpdateChecker : MonoBehaviour
 {
     public const string GithubAPI = "https://api.github.com/";
-    public const string RepoURL = "repos/AllPoland/ArcViewer/releases/latest";
+    public const string RepoURL = "repos/ScoreSaber/watch/releases/latest";
     public static string LatestReleaseURL => GithubAPI + RepoURL;
 
-    public const string latestReleasePage = "https://github.com/AllPoland/ArcViewer/releases/latest";
+    public const string latestReleasePage = "https://github.com/ScoreSaber/watch/releases/latest";
 
     public const string VersionFile = "version.json";
     public static string LatestVersionPath => Path.Combine(Application.persistentDataPath, VersionFile);
@@ -74,11 +74,11 @@ public class UpdateChecker : MonoBehaviour
         string dialogueMessage;
         if(!string.IsNullOrEmpty(versionString))
         {
-            dialogueMessage = $"ArcViewer v{versionString} has released!\nWould you like to download it now?";
+            dialogueMessage = $"watch v{versionString} has released!\nWould you like to open the release page?";
         }
         else
         {
-            dialogueMessage = "A new version of ArcViewer has released!\nWould you like to download it now?";
+            dialogueMessage = "A new version of watch has released!\nWould you like to open the release page?";
         }
         DialogueHandler.ShowDialogueBox(DialogueBoxType.YesNo, dialogueMessage, OpenGithubPage);
     }

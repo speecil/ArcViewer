@@ -12034,7 +12034,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2709129354868922554, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: url
-      value: https://github.com/AllPoland/ArcViewer/releases/latest
+      value: https://github.com/ScoreSaber/watch/releases/latest
       objectReference: {fileID: 0}
     - target: {fileID: 7938308403783786213, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: m_Name
@@ -46801,7 +46801,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: ArcViewer - v0.1.0
+  m_text: ArcViewer 0.7.7+ss.1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 78be5821565fc5848a05da897476c0d3, type: 2}
   m_sharedMaterial: {fileID: -8419783504037868241, guid: 78be5821565fc5848a05da897476c0d3, type: 2}
@@ -46892,7 +46892,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bc97b35a71bb5441bc9b8b84fe3dd32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefixText: ArcViewer - v
+  prefixText: 'ArcViewer '
+  suffixText: +ss.1
 --- !u!114 &1491974456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47935,7 +47936,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: ArcViewer<br><size=60%>Version 0.1.0
+  m_text: ArcViewer 0.7.7+ss.1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 78be5821565fc5848a05da897476c0d3, type: 2}
   m_sharedMaterial: {fileID: -8419783504037868241, guid: 78be5821565fc5848a05da897476c0d3, type: 2}
@@ -48026,7 +48027,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bc97b35a71bb5441bc9b8b84fe3dd32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefixText: 'ArcViewer<br><size=60%>Version '
+  prefixText: 'ArcViewer '
+  suffixText: +ss.1
 --- !u!1001 &1509348771
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -54481,6 +54483,126 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
   m_PrefabInstance: {fileID: 1734555178}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &2000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 124442758}
+    m_Modifications:
+    - target: {fileID: 2709129354868922554, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: url
+      value: https://umbranox.dev
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786213, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_Name
+      value: Umbranox
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_RootOrder
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 440
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -57.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786215, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_Sprite
+      value:
+      objectReference: {fileID: 21300000, guid: b4813be2cd7e4a35a900de6194794dc4, type: 3}
+    - target: {fileID: 7938308405161201762, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_text
+      value: 'Umbranox
+
+        <size=80%>Contributor'
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+--- !u!224 &2000000002 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+  m_PrefabInstance: {fileID: 2000000001}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1734880833 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5136436448866786555, guid: 0b8e475dbbe2bc54993fad86c1556db3, type: 3}
@@ -57270,8 +57392,7 @@ MonoBehaviour:
 
     X : reset freecam
 
-    R : quick
-    reload [desktop ver. only]
+    R : quick reload
 
     F : toggle camera perspective [replays]'
   m_isRightToLeft: 0
@@ -59847,11 +59968,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2709129354868922554, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: url
-      value: https://github.com/AllPoland/ArcViewer/releases/latest
+      value:
       objectReference: {fileID: 0}
     - target: {fileID: 7938308403783786213, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: m_Name
-      value: DesktopVersionLinkButton
+      value: RemovedVersionLinkButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 7938308403783786213, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7938308403783786214, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: m_Pivot.x
@@ -59943,7 +60068,7 @@ PrefabInstance:
       objectReference: {fileID: 21300000, guid: 001586b0c1a6b334db0ec208cecb855e, type: 3}
     - target: {fileID: 7938308405161201762, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: m_text
-      value: Desktop Version
+      value:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -60737,7 +60862,7 @@ PrefabInstance:
       objectReference: {fileID: 21300000, guid: 8c9a231e354c41d40aade732e5f9133a, type: 3}
     - target: {fileID: 7938308405161201762, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: m_text
-      value: Support me
+      value: Support the creator of ArcViewer
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -69580,7 +69705,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2709129354868922554, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: url
-      value: https://github.com/AllPoland/ArcViewer
+      value: https://github.com/ScoreSaber/watch
       objectReference: {fileID: 0}
     - target: {fileID: 7938308403783786213, guid: e8725b00dbd79884080167d5cdc4c9c9, type: 3}
       propertyPath: m_Name

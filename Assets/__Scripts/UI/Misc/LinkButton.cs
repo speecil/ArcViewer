@@ -7,6 +7,6 @@ public class LinkButton : MonoBehaviour
 
     public void OpenLink()
     {
-        Application.OpenURL(url);
+        ExternalLinkOpener.Open(url);
     }
 }

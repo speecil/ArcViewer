@@ -40,44 +40,6 @@ public class MapDirectoryInput : MonoBehaviour
     }
 
 
-    private List<string> ConvertBeatLeaderViewerParameters(List<KeyValuePair<string, string>> parameters)
-    {
-        List<string> convertedArgs = new List<string>();
-        foreach(KeyValuePair<string, string> pair in parameters)
-        {
-            string name = pair.Key;
-            string value = pair.Value;
-
-            string newName;
-            switch(name)
-            {
-                case "scoreId":
-                    newName = "scoreID";
-                    convertedArgs.Add(CombineArgument(newName, value));
-                    break;
-                case "link":
-                    newName = "replayURL";
-                    convertedArgs.Add(CombineArgument(newName, value));
-                    break;
-                case "mapLink":
-                    newName = "url";
-                    convertedArgs.Add(CombineArgument(newName, value));
-                    break;
-                case "time":
-                    newName = "t";
-                    if(int.TryParse(value, out int result))
-                    {
-                        //BL stores timestamps in ms, while ArcViewer uses seconds
-                        value = ((float)result / 1000).ToString();
-                        convertedArgs.Add(CombineArgument(newName, value));
-                    }
-                    break;
-            }
-        }
-        return convertedArgs;
-    }
-
-
     private static string GetQueryValue(List<KeyValuePair<string, string>> parameters, params string[] names)
     {
         foreach(string name in names)
@@ -132,7 +94,7 @@ public class MapDirectoryInput : MonoBehaviour
         }
 
         List<KeyValuePair<string, string>> parameters = UrlUtility.ParseUrlParams(uri.ToString());
-        string scoreID = GetQueryValue(parameters, "ssScoreId", "ssScoreID", "scoreID", "scoreId");
+        string scoreID = GetQueryValue(parameters, "ssScoreId", "ssScoreID");
         if(string.IsNullOrEmpty(scoreID))
         {
             scoreID = GetScoreSaberScoreID(uri);
@@ -182,33 +144,11 @@ public class MapDirectoryInput : MonoBehaviour
             return;
         }
 
-        if(MapDirectory.StartsWith(UrlArgHandler.ArcViewerURL))
+        if(UrlArgHandler.IsArcViewerURL(MapDirectory))
         {
             //Input a shared link
             urlArgHandler.LoadMapFromShareableURL(MapDirectory);
             return;
-        }
-
-        if(MapDirectory.StartsWith(UrlArgHandler.BeatLeaderViewerURL) || MapDirectory.StartsWith(UrlArgHandler.OldBeatLeaderViewerURL))
-        {
-            //Convert BeatLeader viewer links to ArcViewer parameters
-            string url = HttpUtility.UrlDecode(MapDirectory);
-
-            List<KeyValuePair<string, string>> parameters = UrlUtility.ParseUrlParams(url);
-            List<string> convertedArgs = ConvertBeatLeaderViewerParameters(parameters);
-
-            if(convertedArgs.Count > 0)
-            {
-                string newQuery = string.Join('&', convertedArgs);
-                urlArgHandler.LoadMapFromShareableURL($"{UrlArgHandler.ArcViewerURL}?{newQuery}");
-                return;
-            }
-            else
-            {
-                Debug.LogWarning($"Invalid sharing URL: {MapDirectory}");
-                ErrorHandler.Instance.ShowPopup(ErrorType.Error, "Invalid sharing URL!");
-                return;
-            }
         }
 
         if(TryLoadScoreSaberURL(MapDirectory))

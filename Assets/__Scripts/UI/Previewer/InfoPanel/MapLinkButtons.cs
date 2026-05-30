@@ -11,7 +11,6 @@ public class MapLinkButtons : MonoBehaviour
     [Space]
     [SerializeField] private Image leaderboardIcon;
     [SerializeField] private Tooltip leaderboardTooltip;
-    [SerializeField] private Sprite beatLeaderIcon;
     [SerializeField] private Sprite scoreSaberIcon;
 
     private const string beatSaverURL = "https://beatsaver.com/";
@@ -28,7 +27,7 @@ public class MapLinkButtons : MonoBehaviour
         }
 
         string mapURL = string.Concat(beatSaverURL, mapDirect, UrlArgHandler.LoadedMapID);
-        Application.OpenURL(mapURL);
+        ExternalLinkOpener.Open(mapURL);
     }
 
 
@@ -42,7 +41,7 @@ public class MapLinkButtons : MonoBehaviour
             return;
         }
 
-        Application.OpenURL(UrlArgHandler.LoadedMapURL);
+        ExternalLinkOpener.Open(UrlArgHandler.LoadedMapURL);
     }
 
 
@@ -57,7 +56,7 @@ public class MapLinkButtons : MonoBehaviour
             return;
         }
 
-        Application.OpenURL(source.LeaderboardURL);
+        ExternalLinkOpener.Open(source.LeaderboardURL);
     }
 
 
@@ -65,11 +64,7 @@ public class MapLinkButtons : MonoBehaviour
     {
         if(leaderboardIcon != null)
         {
-            leaderboardIcon.sprite = source.SourceType switch
-            {
-                ReplaySourceType.ScoreSaber => scoreSaberIcon,
-                _ => beatLeaderIcon
-            };
+            leaderboardIcon.sprite = source.SourceType == ReplaySourceType.ScoreSaber ? scoreSaberIcon : null;
         }
 
         if(leaderboardTooltip != null)
@@ -84,7 +79,7 @@ public class MapLinkButtons : MonoBehaviour
     private void UpdateShareButton()
     {
         bool enable = ReplayManager.IsReplayMode
-            ? !string.IsNullOrEmpty(UrlArgHandler.LoadedReplayID) || !string.IsNullOrEmpty(UrlArgHandler.LoadedReplayURL) || !string.IsNullOrEmpty(UrlArgHandler.LoadedSSScoreId)
+            ? !string.IsNullOrEmpty(UrlArgHandler.LoadedReplayURL) || !string.IsNullOrEmpty(UrlArgHandler.LoadedSSScoreId)
             : !string.IsNullOrEmpty(UrlArgHandler.LoadedMapID) || !string.IsNullOrEmpty(UrlArgHandler.LoadedMapURL);
         shareButton.SetActive(enable);
     }
