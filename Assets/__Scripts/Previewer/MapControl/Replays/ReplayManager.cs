@@ -6,8 +6,6 @@ using UnityEngine;
 
 public class ReplayManager : MonoBehaviour
 {
-    public const string BeatLeaderURL = "https://www.beatleader.com/";
-
     public static bool IsReplayMode { get; private set; }
     public static Replay CurrentReplay { get; private set; }
 
@@ -17,8 +15,7 @@ public class ReplayManager : MonoBehaviour
     public static Color? PlayerLeftSaberColor { get; private set; }
     public static Color? PlayerRightSaberColor { get; private set; }
 
-    public static BeatleaderUser PlayerInfo;
-    public static string LeaderboardID = "";
+    public static ReplaySourceInfo SourceInfo;
 
     public static event Action<bool> OnReplayModeChanged;
     public static event Action<AnimatedAvatar> OnAvatarUpdated;
@@ -208,31 +205,12 @@ public class ReplayManager : MonoBehaviour
     }
 
 
-    public static void SetPlayerCustomColors(BeatleaderUser user)
+    public static void ApplyCustomColorsFromSource()
     {
-        if(user.profileSettings == null)
+        if(SourceInfo != null && SourceInfo.HasCustomColors)
         {
-            ClearPlayerCustomColors();
-            return;
-        }
-
-        BeatleaderUserProfileSettings profileSettings = user.profileSettings;
-        if(string.IsNullOrEmpty(profileSettings.leftSaberColor) || string.IsNullOrEmpty(profileSettings.rightSaberColor))
-        {
-            ClearPlayerCustomColors();
-            return;
-        }
-
-        Color leftSaberColor;
-        Color rightSaberColor;
-
-        bool parsedLeftColor = ColorUtility.TryParseHtmlString(profileSettings.leftSaberColor, out leftSaberColor);
-        bool parsedRightColor = ColorUtility.TryParseHtmlString(profileSettings.rightSaberColor, out rightSaberColor);
-
-        if(parsedLeftColor && parsedRightColor)
-        {
-            PlayerLeftSaberColor = leftSaberColor;
-            PlayerRightSaberColor = rightSaberColor;
+            PlayerLeftSaberColor = SourceInfo.LeftSaberColor;
+            PlayerRightSaberColor = SourceInfo.RightSaberColor;
         }
         else
         {
@@ -285,8 +263,7 @@ public class ReplayManager : MonoBehaviour
         ClearAvatar();
         ClearPlayerCustomColors();
 
-        PlayerInfo = null;
-        LeaderboardID = "";
+        SourceInfo = null;
 
         TimeManager.OnBeatChangedEarly -= UpdateBeat;
     }

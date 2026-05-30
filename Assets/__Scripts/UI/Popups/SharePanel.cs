@@ -24,7 +24,11 @@ public class SharePanel : MonoBehaviour
 
         if(ReplayManager.IsReplayMode)
         {
-            if(!string.IsNullOrEmpty(UrlArgHandler.LoadedReplayID))
+            if(!string.IsNullOrEmpty(UrlArgHandler.LoadedSSScoreId))
+            {
+                newText += $"?ssScoreId={UrlArgHandler.LoadedSSScoreId}";
+            }
+            else if(!string.IsNullOrEmpty(UrlArgHandler.LoadedReplayID))
             {
                 newText += $"?scoreID={UrlArgHandler.LoadedReplayID}";
             }

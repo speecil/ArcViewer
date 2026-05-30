@@ -23412,7 +23412,7 @@ PrefabInstance:
     - target: {fileID: 4465115620828890661, guid: 3b7121a60be5d6f4fa3635c74fd4f47c, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: aab9335b4fcb102489fe96bc1a141bf6, type: 3}
+      objectReference: {fileID: 21300000, guid: 69bfaa932a94a8440b91b40e69e46c83, type: 3}
     - target: {fileID: 4465115620828890661, guid: 3b7121a60be5d6f4fa3635c74fd4f47c, type: 3}
       propertyPath: m_Color.b
       value: 1
@@ -32602,7 +32602,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50a1bb069cc015242a8fd646a471379c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Text: Open this player's BeatLeader profile
+  Text: Open this player's profile
 --- !u!1001 &996146824
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -36461,8 +36461,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4465115620828890661, guid: 3b7121a60be5d6f4fa3635c74fd4f47c, type: 3}
       propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: 69bfaa932a94a8440b91b40e69e46c83, type: 3}
+      value:
+      objectReference: {fileID: 21300000, guid: 8e805da8403945d41b056d34b2963dfe, type: 3}
     - target: {fileID: 4465115620828890661, guid: 3b7121a60be5d6f4fa3635c74fd4f47c, type: 3}
       propertyPath: m_Color.b
       value: 1
@@ -57678,6 +57678,7 @@ MonoBehaviour:
   modifierText: {fileID: 418795508}
   modifierTooltip: {fileID: 418795510}
   playerProfileButton: {fileID: 996081884}
+  playerProfileTooltip: {fileID: 996081886}
   animateAvatarButton: {fileID: 992033655}
 --- !u!1 &1833669571
 GameObject:
@@ -61085,6 +61086,10 @@ MonoBehaviour:
   beatSaverButton: {fileID: 1493042138}
   mapDownloadButton: {fileID: 996146826}
   leaderboardButton: {fileID: 2000402391}
+  leaderboardIcon: {fileID: 1029942946}
+  leaderboardTooltip: {fileID: 2000402392}
+  beatLeaderIcon: {fileID: 21300000, guid: aab9335b4fcb102489fe96bc1a141bf6, type: 3}
+  scoreSaberIcon: {fileID: 21300000, guid: b39bd05137cf43dc8573168a05b6069a, type: 3}
 --- !u!1 &1920767029 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5241766548580045631, guid: 1917af5300baa7a4a8080f2e09dfc773, type: 3}
@@ -61958,8 +61963,8 @@ MonoBehaviour:
   soupInput: {fileID: 1935205304}
   placeholder: Enter Map File Location, URL, or BeatSaver ID
   webGLPlaceholder: Enter Map URL or BeatSaver ID
-  replayPlaceholder: Enter Replay File Location, URL, or BeatLeader Score ID
-  webGLReplayPlaceholder: Enter Replay URL or BeatLeader Score ID
+  replayPlaceholder: Enter Replay File Location, URL, or Score ID
+  webGLReplayPlaceholder: Enter Replay URL or Score ID
   theSoupPlaceholder: Awaiting authorization...
   MapDirectory: 
 --- !u!114 &1935205304

@@ -36,7 +36,7 @@ public class ExplorerManager : MonoBehaviour, IPointerDownHandler
 #if UNITY_WEBGL && !UNITY_EDITOR
         if(!ReplayManager.IsReplayMode && SettingsManager.GetBool("replaymode"))
         {
-            UploadFile(gameObject.name, "OnReplayUploaded", ".bsor", false);
+            UploadFile(gameObject.name, "OnReplayUploaded", ".bsor,.dat", false);
         }
         else
         {
@@ -54,7 +54,7 @@ public class ExplorerManager : MonoBehaviour, IPointerDownHandler
         {
             extensions = new []
             {
-                new ExtensionFilter("Replay Files", new string[] {"bsor"})
+                new ExtensionFilter("Replay Files", new string[] {"bsor", "dat"})
             };
         }
         else

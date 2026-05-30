@@ -146,7 +146,10 @@ public class ChainManager : MapElementManager<ChainLink>
                     }
 
                     Vector2 worldPosition = objectManager.ObjectSpaceToWorldSpace(newLink.Position);
-                    matchingEvent.SetEventValues(ScoringType.ChainLink, worldPosition);
+                    ScoringType linkScoringType = matchingEvent.ID / 10000 == (int)ScoringType.ChainLinkArcHead
+                        ? ScoringType.ChainLinkArcHead
+                        : ScoringType.ChainLink;
+                    matchingEvent.SetEventValues(linkScoringType, worldPosition);
 
                     usedScoringEvents.Add(matchingEvent);
                 }

@@ -17,6 +17,8 @@ public static class UrlUtility
         "replayURL",
         "scoreID",
         "scoreId",
+        "ssScoreId",
+        "ssScoreID",
         "link",
         "mapLink",
         "time",

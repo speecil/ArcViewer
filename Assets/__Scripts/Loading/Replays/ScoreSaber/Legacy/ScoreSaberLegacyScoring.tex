@@ -1,0 +1,151 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb, geometry, enumitem}
+\geometry{margin=1in}
+\title{Legacy ScoreSaber Score Reconstruction}
+\author{}
+\date{}
+
+\begin{document}
+   \maketitle
+
+   \section{What We Have}
+
+   Legacy ScoreSaber replays provide per-frame tuples $(t_{i},\; s_{i},\; k_{i})$,
+   namely timestamp, cumulative score, and combo. No individual note scores. We
+   have to figure those out ourselves.
+
+   \section{Scoring Refresher}
+
+   Note score,
+   \[
+      B = B_{\text{pre}}+ B_{\text{post}}+ B_{\text{acc}}
+   \]
+   Pre swing up to 70, post swing up to 30, acc is 15. Max 115. Cumulative score
+   multiplies each note by combo multiplier $m \in \{1, 2, 4, 8\}$.
+
+   The catch is post swing doesn't get applied instantly. It settles over roughly
+   50 to 100ms after the hit. So at the frame you hit a note the score only has
+   \[
+      s_{i} \approx S_{\text{prev}}+ (B_{\text{pre}}+ B_{\text{acc}}) \cdot m + \beta
+      \cdot B_{\text{post}}\cdot m
+   \]
+   where $0 \le \beta \le 1$ is how much post swing has settled so far. The rest trickles
+   in over the next few frames.
+
+   \section{Finding Notes}
+
+   We scan frames for combo changes. Combo goes up, hit. Combo drops, failed
+   action. If combo jumps by more than 1 that means multiple notes were hit in the
+   same frame.
+
+   \section{Getting Scores Out}
+
+   For a lone note with plenty of time before the next hit, just grab the score delta
+   across the window and divide by the multiplier
+   \[
+      B = \text{clamp}\!\left(\left\lfloor \frac{s_{\text{end}}- s_{\text{before}}}{m}
+      \right\rfloor,\; 0,\; 115\right)
+   \]
+   This works well when the window is wide enough for post swing to settle.
+
+   \subsection{The Problem}
+
+   When notes are close together (stacks, slider dots, doubles) the windows get
+   tiny. The first note's window misses its post swing, the second note's window
+   picks up the leftover. Second note gets clamped at 115, the excess is just
+   gone. This adds up over the whole map.
+
+   \section{Chaining}
+
+   The fix is to chain consecutive hits that are closer than
+   $\tau = 40\,\text{ms}$ apart. Use one big settled window for the whole chain,
+   then split the total evenly.
+
+   \subsection{Why 40ms}
+
+   Gap between 1/4 stream notes,
+   \[
+      \Delta t = \frac{60}{4 \cdot \text{BPM}}\cdot 1000\;\text{ms}
+   \]
+
+   \begin{center}
+      \renewcommand{\arraystretch}{1.2}
+      \begin{tabular}{r r l}
+         \hline
+         BPM & Gap  & Chained?   \\
+         \hline
+         250 & 60ms & No         \\
+         300 & 50ms & No         \\
+         350 & 43ms & No         \\
+         375 & 40ms & Borderline \\
+         400 & 38ms & Yes        \\
+         \hline
+      \end{tabular}
+   \end{center}
+
+   Streams up to about 370 BPM won't get chained. Stacks (0ms) and slider dots (around
+   18ms) will, which is the intended behavior.
+
+   \subsection{Settled Window}
+
+   For a chain from change $c$ to $c_{\text{end}}$,
+   \[
+      \Delta S = s_{f_{c_{\text{end}}} - 1}- s_{f_c - 1}
+   \]
+   Since $c_{\text{end}}$ is the first change after the chain with a big enough
+   gap, by that point all the post swing from every note in the chain has settled.
+
+   \subsection{Splitting the Score}
+
+   Average base score using the multiplier sum,
+   \[
+      \bar{B}= \text{clamp}\!\left(\operatorname{round}\!\left(\frac{\Delta S}{\sum
+      m_{j}}\right),\; 0,\; 115\right)
+   \]
+
+   \subsection{Adding Some Variation}
+
+   Giving every note in a chain the exact same score looks artificial. So we
+   nudge them using the immediate frame deltas as a guide. Let
+   \[
+      \delta_{g} = s_{f_g}- s_{f_g - 1}\qquad H = \sum_{g} h_{g}
+   \]
+   Then
+   \[
+      d_{g} = \frac{\max(1,\; \delta_{g})}{h_{g}}\qquad \bar{d}= \frac{1}{H}\sum d
+      _{g} \cdot h_{g}
+   \]
+   \[
+      \epsilon_{g} = \text{clamp}\!\left(\operatorname{round}\!\left(\left(\frac{d_{g}}{\max(1,\;
+      \bar{d})}- 1\right) \cdot 15\right),\; -5,\; 5\right)
+   \]
+
+   For multi-hit changes where we only have one delta, just alternate $\{-1, +1\}$
+   between notes. Final score,
+   \[
+      B = \text{clamp}\!\left(\bar{B}+ \epsilon_{g} + \omega,\; 0,\; 115\right)
+   \]
+
+   \section{Turning It Back into Cut Ratings}
+
+   ScoreManager needs \texttt{beforeCutRating} and \texttt{afterCutRating}. We
+   fill pre swing first, since that is what the game applies immediately.
+   \[
+      B_{\text{swing}}= \max(0,\; B - 15)
+   \]
+   \[
+      r_{\text{pre}}= \min\!\left(1,\; \frac{B_{\text{swing}}}{70}\right) \qquad r
+      _{\text{post}}=
+      \begin{cases}
+         \frac{B_{\text{swing}} - 70}{30} & \text{if }B_{\text{swing}}> 70 \\
+         0                                & \text{otherwise}
+      \end{cases}
+   \]
+
+   \section{How Well Does It Work}
+
+   About 0.02\% off the real cumulative score. The remaining error is from
+   clamping at 115 eating the excess when notes overlap, and from the fact that we
+   just don't have per-note data in the legacy format. That limitation is
+   inherent to the legacy format.
+\end{document}

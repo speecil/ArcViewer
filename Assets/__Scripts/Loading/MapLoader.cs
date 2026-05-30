@@ -12,6 +12,16 @@ using UnityEngine.Networking;
 
 public class MapLoader : MonoBehaviour
 {
+    public class PreparedMapLoad
+    {
+        public Stream Stream;
+        public string CachedPath;
+        public string URL;
+        public string MapID;
+        public string MapHash;
+        public bool IgnoreMapForSharing;
+    }
+
     private static bool _loading = false;
     public static bool Loading
     {
@@ -270,6 +280,68 @@ public class MapLoader : MonoBehaviour
     }
 
 
+    private IEnumerator LoadPreparedMapCoroutine(Task<PreparedMapLoad> mapTask)
+    {
+        LoadingMessage = "Downloading map";
+        yield return new WaitUntil(() => mapTask.IsCompleted);
+
+        if(mapTask.IsFaulted)
+        {
+            Debug.LogWarning($"Failed to prepare map with error: {mapTask.Exception}");
+            ShowReplayMapPrompt();
+            yield break;
+        }
+
+        PreparedMapLoad preparedMap = mapTask.Result;
+        if(preparedMap == null)
+        {
+            ShowReplayMapPrompt();
+            yield break;
+        }
+
+        if(!string.IsNullOrEmpty(preparedMap.CachedPath))
+        {
+            LoadMapZip(preparedMap.CachedPath);
+            yield break;
+        }
+
+        if(preparedMap.Stream == null)
+        {
+            ShowReplayMapPrompt();
+            yield break;
+        }
+
+        if(preparedMap.Stream.CanSeek)
+        {
+            preparedMap.Stream.Position = 0;
+        }
+
+        ZipReader zipReader = new ZipReader(null, preparedMap.Stream);
+        try
+        {
+            zipReader.Archive = new ZipArchive(zipReader.ArchiveStream, ZipArchiveMode.Read);
+
+            UrlArgHandler.ignoreMapForSharing = preparedMap.IgnoreMapForSharing;
+            if(!string.IsNullOrEmpty(preparedMap.MapID))
+            {
+                UrlArgHandler.LoadedMapID = preparedMap.MapID;
+            }
+            else UrlArgHandler.LoadedMapURL = preparedMap.URL;
+
+            StartCoroutine(LoadMapCoroutine(zipReader));
+        }
+        catch(Exception err)
+        {
+            zipReader.Dispose();
+
+            ErrorHandler.Instance.ShowPopup(ErrorType.Error, "Failed to read map zip!");
+            Debug.LogWarning($"Unhandled exception loading prepared map: {err.Message}, {err.StackTrace}");
+
+            SetMap(LoadedMap.Empty);
+        }
+    }
+
+
     public IEnumerator LoadMapIDCoroutine(string mapID, string mapHash = null)
     {
         Loading = true;
@@ -316,10 +388,7 @@ public class MapLoader : MonoBehaviour
         {
             Debug.Log("Invalid hash! Showing manual map selection.");
 
-            Loading = false;
-            LoadingMessage = "";
-
-            OnReplayMapPrompt?.Invoke();
+            ShowReplayMapPrompt();
             yield break;
         }
 
@@ -361,10 +430,7 @@ public class MapLoader : MonoBehaviour
         {
             Debug.Log("Empty or nonexistant URL! Showing manual map selection.");
 
-            Loading = false;
-            LoadingMessage = "";
-
-            OnReplayMapPrompt?.Invoke();
+            ShowReplayMapPrompt();
             yield break;
         }
 
@@ -377,48 +443,210 @@ public class MapLoader : MonoBehaviour
     }
 
 
-    private IEnumerator SetReplayCoroutine(Replay replay, string mapURL = null, string mapID = null, bool noProxy = false)
+    private static Task<PreparedMapLoad> PrepareMapLoadAsync(ResolvedScore resolved, bool noProxy)
     {
-        ReplayManager.SetReplay(replay);
-        LoadingMessage = "Loading player profile";
+        if(resolved == null) return Task.FromResult<PreparedMapLoad>(null);
 
-        Debug.Log($"Getting Beatleader user {replay.info.playerID}");
-        using Task<BeatleaderUser> userTask = ReplayLoader.BeatleaderUserFromID(replay.info.playerID);
-        yield return new WaitUntil(() => userTask.IsCompleted);
-
-        BeatleaderUser response = userTask.Result;
-        ReplayManager.PlayerInfo = response;
-
-        if(response != null)
+        string mapHash = GetSourceMapHash(resolved.SourceInfo);
+        if(!string.IsNullOrEmpty(resolved.MapURL))
         {
-            using Task<byte[]> avatarTask = ReplayLoader.AvatarDataFromBeatleaderUser(response);
-            yield return new WaitUntil(() => avatarTask.IsCompleted);
-
-            byte[] avatarData = avatarTask.Result;
-            if(avatarData != null && avatarData.Length > 0)
-            {
-                ReplayManager.SetAvatarImageData(avatarData);
-            }
-
-            ReplayManager.SetPlayerCustomColors(response);
+            return PrepareMapURLAsync(resolved.MapURL, resolved.MapID, mapHash, noProxy, false);
         }
 
-        string mapHash = replay.info.hash;
+        if(!string.IsNullOrEmpty(resolved.MapID))
+        {
+            return PrepareMapIDAsync(resolved.MapID, mapHash, noProxy);
+        }
 
-        //For some reason replay hash fields might have extra text past the hash
-        if(mapHash.Length > 40)
+        if(!string.IsNullOrEmpty(mapHash))
+        {
+            return PrepareMapHashAsync(mapHash, noProxy);
+        }
+
+        if(resolved.SourceInfo?.HasFallbackMap == true)
+        {
+            return PrepareMapURLAsync(resolved.SourceInfo.FallbackMapDownloadURL, resolved.SourceInfo.FallbackMapID, mapHash, noProxy, false);
+        }
+
+        return Task.FromResult<PreparedMapLoad>(null);
+    }
+
+
+    private static async Task<PreparedMapLoad> PrepareMapIDAsync(string mapID, string mapHash, bool noProxy)
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
+        CachedFile cachedFile = CacheManager.GetCachedMap(null, mapID, mapHash);
+        if(!string.IsNullOrEmpty(cachedFile?.FilePath))
+        {
+            return PreparedMapFromCache(cachedFile, mapID, mapHash, false);
+        }
+#endif
+
+        Debug.Log($"Getting BeatSaver response for ID: {mapID}");
+        string mapURL = await BeatSaverHandler.GetBeatSaverMapID(mapID);
+        if(string.IsNullOrEmpty(mapURL)) return null;
+
+        mapURL = System.Web.HttpUtility.UrlDecode(mapURL);
+        return await PrepareMapURLAsync(mapURL, mapID, mapHash, noProxy, false);
+    }
+
+
+    private static async Task<PreparedMapLoad> PrepareMapHashAsync(string mapHash, bool noProxy)
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
+        CachedFile cachedFile = CacheManager.GetCachedMap(null, null, mapHash);
+        if(!string.IsNullOrEmpty(cachedFile?.FilePath) && (!string.IsNullOrEmpty(cachedFile.ID) || !string.IsNullOrEmpty(cachedFile.URL)))
+        {
+            return PreparedMapFromCache(cachedFile, null, mapHash, true);
+        }
+#endif
+
+        Debug.Log($"Getting BeatSaver response for hash: {mapHash}");
+        (string[] mapURLs, string mapID) = await BeatSaverHandler.GetBeatSaverMapHash(mapHash);
+        if(mapURLs == null || mapURLs.Length == 0) return null;
+
+        for(int i = 0; i < mapURLs.Length; i++)
+        {
+            mapURLs[i] = System.Web.HttpUtility.UrlDecode(mapURLs[i]);
+        }
+
+        return await PrepareMapURLsAsync(mapURLs, mapID, mapHash, noProxy, true);
+    }
+
+
+    private static async Task<PreparedMapLoad> PrepareMapURLAsync(string url, string mapID, string mapHash, bool noProxy, bool ignoreMapForSharing)
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
+        CachedFile cachedFile = CacheManager.GetCachedMap(url, mapID, mapHash);
+        if(!string.IsNullOrEmpty(cachedFile?.FilePath))
+        {
+            return PreparedMapFromCache(cachedFile, mapID, mapHash, ignoreMapForSharing);
+        }
+#endif
+
+        Debug.Log($"Downloading map data from: {url}");
+        Stream zipStream = await WebLoader.LoadFileURL(url, noProxy);
+        if(zipStream == null) return null;
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+        string extraData = mapID == null ? null : "latest";
+        CacheManager.SaveMapToCache(zipStream, url, mapID, mapHash, extraData);
+#endif
+
+        return new PreparedMapLoad
+        {
+            Stream = zipStream,
+            URL = url,
+            MapID = mapID,
+            MapHash = mapHash,
+            IgnoreMapForSharing = ignoreMapForSharing
+        };
+    }
+
+
+    private static async Task<PreparedMapLoad> PrepareMapURLsAsync(
+        string[] urls, string mapID, string mapHash, bool noProxy, bool ignoreMapForSharing)
+    {
+        for(int i = 0; i < urls.Length; i++)
+        {
+            string url = urls[i];
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+            CachedFile cachedFile = CacheManager.GetCachedMap(url, mapID, mapHash);
+            if(!string.IsNullOrEmpty(cachedFile?.FilePath))
+            {
+                return PreparedMapFromCache(cachedFile, mapID, mapHash, ignoreMapForSharing);
+            }
+#endif
+
+            Debug.Log($"Downloading map data from: {url}");
+            Stream zipStream = await WebLoader.LoadFileURL(url, noProxy, false);
+            if(zipStream == null)
+            {
+                Debug.LogWarning("Downloaded data is null!");
+                continue;
+            }
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+            CacheManager.SaveMapToCache(zipStream, url, mapID, mapHash);
+#endif
+
+            return new PreparedMapLoad
+            {
+                Stream = zipStream,
+                URL = url,
+                MapID = mapID,
+                MapHash = mapHash,
+                IgnoreMapForSharing = ignoreMapForSharing
+            };
+        }
+
+        return null;
+    }
+
+
+    private static PreparedMapLoad PreparedMapFromCache(CachedFile cachedFile, string mapID, string mapHash, bool ignoreMapForSharing)
+    {
+        return new PreparedMapLoad
+        {
+            CachedPath = cachedFile.FilePath,
+            URL = cachedFile.URL,
+            MapID = string.IsNullOrEmpty(cachedFile.ID) ? mapID : cachedFile.ID,
+            MapHash = mapHash,
+            IgnoreMapForSharing = ignoreMapForSharing
+        };
+    }
+
+
+    private static string GetSourceMapHash(ReplaySourceInfo sourceInfo)
+    {
+        string mapHash = sourceInfo?.MapHash;
+        if(!string.IsNullOrEmpty(mapHash) && mapHash.Length > 40)
         {
             mapHash = mapHash[..40];
         }
 
-        Debug.Log("Getting replay leaderboard info.");
-        using Task<BeatleaderLeaderboardResponse> leaderboardTask = ReplayLoader.LeaderboardFromHash(mapHash);
-        yield return new WaitUntil(() => leaderboardTask.IsCompleted);
+        return mapHash;
+    }
 
-        BeatleaderLeaderboardResponse leaderboard = leaderboardTask.Result;
-        if(leaderboard != null)
+
+    private void ShowReplayMapPrompt()
+    {
+        Debug.Log("No map download succeeded! Showing manual map selection.");
+        Loading = false;
+        LoadingMessage = "";
+
+        OnReplayMapPrompt?.Invoke();
+    }
+
+
+    private IEnumerator SetReplayCoroutine(
+        Replay replay, string mapURL = null, string mapID = null, bool noProxy = false, Task<PreparedMapLoad> mapTask = null)
+    {
+        ReplaySourceInfo sourceInfo = ReplayManager.SourceInfo;
+
+        sourceInfo?.ApplyTo(replay);
+
+        // default to beatleader source for replays loaded without an API flow
+        if(sourceInfo == null)
         {
-            ReplayManager.LeaderboardID = ReplayLoader.LeaderboardIDFromResponse(leaderboard, replay.info.mode, replay.info.difficulty);
+            sourceInfo = BeatLeaderSource.Create();
+            ReplayManager.SourceInfo = sourceInfo;
+        }
+
+        ReplayManager.SetReplay(replay);
+
+        Task sourceDataTask = LoadSourceDataAsync(sourceInfo, replay);
+        if(mapTask != null)
+        {
+            StartCoroutine(LoadPreparedMapCoroutine(mapTask));
+            yield break;
+        }
+
+        string mapHash = replay.info.hash;
+        if(!string.IsNullOrEmpty(mapHash) && mapHash.Length > 40)
+        {
+            mapHash = mapHash[..40];
         }
 
         if(!string.IsNullOrEmpty(mapID))
@@ -433,17 +661,33 @@ public class MapLoader : MonoBehaviour
             UrlArgHandler.LoadedMapURL = mapURL;
             StartCoroutine(LoadMapZipURLCoroutine(mapURL, mapID, mapHash, noProxy));
         }
-        else if((string.IsNullOrEmpty(replay.info?.hash) || replay.info.hash.Length < 40) && !string.IsNullOrEmpty(leaderboard?.song?.downloadUrl))
+        else if(string.IsNullOrEmpty(replay.info?.hash) || replay.info.hash.Length < 40)
         {
-            //The replay doesn't include a valid hash, go by the specified map URL instead
-            if(!string.IsNullOrEmpty(leaderboard.song.id))
+            if(!sourceInfo.HasFallbackMap)
             {
-                UrlArgHandler.LoadedMapID = leaderboard.song.id;
+                LoadingMessage = "Loading player profile";
+                yield return new WaitUntil(() => sourceDataTask.IsCompleted);
             }
-            else UrlArgHandler.LoadedMapURL = leaderboard.song.downloadUrl;
-            StartCoroutine(LoadMapZipURLCoroutine(leaderboard.song.downloadUrl, leaderboard.song.id, mapHash, noProxy));
+
+            if(sourceInfo.HasFallbackMap)
+            {
+                if(!string.IsNullOrEmpty(sourceInfo.FallbackMapID))
+                {
+                    UrlArgHandler.LoadedMapID = sourceInfo.FallbackMapID;
+                }
+                else UrlArgHandler.LoadedMapURL = sourceInfo.FallbackMapDownloadURL;
+
+                StartCoroutine(LoadMapZipURLCoroutine(sourceInfo.FallbackMapDownloadURL, sourceInfo.FallbackMapID, mapHash, noProxy));
+            }
+            else StartCoroutine(LoadMapFromReplayCoroutine(replay, noProxy));
         }
         else StartCoroutine(LoadMapFromReplayCoroutine(replay, noProxy));
+    }
+
+
+    private static Task LoadSourceDataAsync(ReplaySourceInfo sourceInfo, Replay replay)
+    {
+        return sourceInfo.LoadSourceData?.Invoke(replay) ?? Task.CompletedTask;
     }
 
 
@@ -479,24 +723,7 @@ public class MapLoader : MonoBehaviour
         using UnityWebRequest uwr = UnityWebRequest.Get(directory);
         yield return uwr.SendWebRequest();
 
-        if(uwr.result == UnityWebRequest.Result.Success)
-        {
-            using Task<Replay> replayTask = ReplayLoader.ReplayFromStream(new MemoryStream(uwr.downloadHandler.data));
-            yield return new WaitUntil(() => replayTask.IsCompleted);
-
-            Replay replay = replayTask.Result;
-            if(replay == null)
-            {
-                Debug.LogWarning($"Failed to read replay data!");
-                ErrorHandler.Instance.ShowPopup(ErrorType.Error, $"Failed to read replay data!");
-
-                SetMap(LoadedMap.Empty);
-                yield break;
-            }
-
-            StartCoroutine(SetReplayCoroutine(replay));
-        }
-        else
+        if(uwr.result != UnityWebRequest.Result.Success)
         {
             Debug.LogWarning(uwr.error);
             ErrorHandler.Instance.ShowPopup(ErrorType.Error, $"Failed to load replay! {uwr.error}");
@@ -504,6 +731,21 @@ public class MapLoader : MonoBehaviour
             SetMap(LoadedMap.Empty);
             yield break;
         }
+
+        using Task<Replay> replayTask = ReplayLoader.ReplayFromStream(new MemoryStream(uwr.downloadHandler.data));
+        yield return new WaitUntil(() => replayTask.IsCompleted);
+
+        Replay replay = replayTask.Result;
+        if(replay == null)
+        {
+            Debug.LogWarning($"Failed to read replay data!");
+            ErrorHandler.Instance.ShowPopup(ErrorType.Error, $"Failed to read replay data!");
+
+            SetMap(LoadedMap.Empty);
+            yield break;
+        }
+
+        StartCoroutine(SetReplayCoroutine(replay));
     }
 
 
@@ -527,7 +769,8 @@ public class MapLoader : MonoBehaviour
 #endif
 
 
-    public IEnumerator LoadReplayURLCoroutine(string url, string id = null, string mapURL = null, string mapID = null, bool noProxy = false)
+    public IEnumerator LoadReplayURLCoroutine(
+        string url, string id = null, string mapURL = null, string mapID = null, bool noProxy = false, Task<PreparedMapLoad> mapTask = null)
     {
         Loading = true;
         Debug.Log($"Searching for replay from: {url}");
@@ -572,11 +815,25 @@ public class MapLoader : MonoBehaviour
         CacheManager.SaveReplayToCache(replayStream, url, id, mapURL);
 #endif
 
-        StartCoroutine(SetReplayCoroutine(replay, mapURL, mapID, noProxy));
+        StartCoroutine(SetReplayCoroutine(replay, mapURL, mapID, noProxy, mapTask));
     }
 
 
     public IEnumerator LoadReplayIDCoroutine(string id, string mapURL = null, string mapID = null, bool noProxy = false)
+    {
+        yield return LoadReplayFromScoreCoroutine(
+            ReplaySourceType.BeatLeader, id, mapURL, mapID, noProxy);
+    }
+
+
+    public IEnumerator LoadScoreSaberReplayIDCoroutine(string id, string mapURL = null, string mapID = null, bool noProxy = false)
+    {
+        yield return LoadReplayFromScoreCoroutine(
+            ReplaySourceType.ScoreSaber, id, mapURL, mapID, noProxy);
+    }
+
+
+    public IEnumerator LoadReplayIDAutoCoroutine(string id, string mapURL = null, string mapID = null, bool noProxy = false)
     {
         Loading = true;
         Debug.Log($"Searching for replay from score ID: {id}");
@@ -586,45 +843,107 @@ public class MapLoader : MonoBehaviour
         if(!string.IsNullOrEmpty(cachedFile?.FilePath))
         {
             Debug.Log("Found replay in cache.");
+            UrlArgHandler.LoadedReplayID = id;
             StartCoroutine(LoadReplayDirectoryCoroutine(cachedFile.FilePath, cachedFile.ExtraData));
             yield break;
         }
 #endif
 
-        LoadingMessage = "Fetching replay from Beatleader";
+        LoadingMessage = "Fetching replay";
 
-        using Task<BeatleaderScore> apiTask = ReplayLoader.BeatleaderScoreFromID(id);
-        yield return new WaitUntil(() => apiTask.IsCompleted);
+        Task<ResolvedScore> beatLeaderTask = ResolveReplayScoreAsync(
+            ReplaySourceType.BeatLeader, id, mapURL, mapID, false);
+        yield return new WaitUntil(() => beatLeaderTask.IsCompleted);
 
-        BeatleaderScore apiResponse = apiTask.Result;
-        if(string.IsNullOrEmpty(apiResponse?.replay))
+        ReplaySourceType sourceType = ReplaySourceType.BeatLeader;
+        ResolvedScore resolved = beatLeaderTask.Result;
+
+        if(resolved == null)
         {
-            Debug.Log("Empty or nonexistant URL!");
+            Task<ResolvedScore> scoreSaberTask = ResolveReplayScoreAsync(
+                ReplaySourceType.ScoreSaber, id, mapURL, mapID, false);
+            yield return new WaitUntil(() => scoreSaberTask.IsCompleted);
+
+            sourceType = ReplaySourceType.ScoreSaber;
+            resolved = scoreSaberTask.Result;
+        }
+
+        if(resolved == null || string.IsNullOrEmpty(resolved.ReplayURL))
+        {
+            Debug.Log($"Empty or nonexistent replay URL for score ID: {id}");
+            ErrorHandler.Instance.ShowPopup(ErrorType.Error, $"Couldn't find a replay for score {id}!");
             SetMap(LoadedMap.Empty);
             yield break;
         }
 
-        //If the user specified an ID that doesn't match the api data, follow the request
-        bool useMapID = !string.IsNullOrEmpty(mapID) && mapID != apiResponse.song?.id;
-        bool useResponseURL = !useMapID && string.IsNullOrEmpty(mapURL) && !string.IsNullOrEmpty(apiResponse.song?.downloadUrl);
-
-        //Avoid following BeatSaver links so that we get the map ID for later
-        if(useResponseURL && !BeatSaverHandler.BeatSaverCdnURLs.Any(x => apiResponse.song.downloadUrl.Contains(x)))
+        if(sourceType == ReplaySourceType.ScoreSaber)
         {
-            //The map url is included with the BL score response
-            mapURL = System.Web.HttpUtility.UrlDecode(apiResponse.song.downloadUrl);
-            UrlArgHandler.ignoreMapForSharing = true;
+            UrlArgHandler.LoadedSSScoreId = id;
+        }
+        else UrlArgHandler.LoadedReplayID = id;
 
-            if(mapID == apiResponse.song.id)
-            {
-                //Remove the specified ID to avoid querying BeatSaver and ensure we
-                //get the right map version. (ID would take precedence over mapURL)
-                mapID = null;
-            }
+        if(resolved.SourceInfo != null)
+        {
+            ReplayManager.SourceInfo = resolved.SourceInfo;
         }
 
-        string replayURL = System.Web.HttpUtility.UrlDecode(apiResponse.replay);
-        StartCoroutine(LoadReplayURLCoroutine(replayURL, id, mapURL, mapID, noProxy));
+        string replayID = sourceType == ReplaySourceType.BeatLeader ? id : null;
+        Task<PreparedMapLoad> mapTask = PrepareMapLoadAsync(resolved, noProxy);
+        StartCoroutine(LoadReplayURLCoroutine(resolved.ReplayURL, replayID, resolved.MapURL, resolved.MapID, noProxy, mapTask));
+    }
+
+
+    private IEnumerator LoadReplayFromScoreCoroutine(ReplaySourceType sourceType, string id, string mapURL, string mapID, bool noProxy)
+    {
+        Loading = true;
+        Debug.Log($"Searching for replay from {sourceType} score ID: {id}");
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+        if(sourceType == ReplaySourceType.BeatLeader)
+        {
+            CachedFile cachedFile = CacheManager.GetCachedReplay(null, id);
+            if(!string.IsNullOrEmpty(cachedFile?.FilePath))
+            {
+                Debug.Log("Found replay in cache.");
+                StartCoroutine(LoadReplayDirectoryCoroutine(cachedFile.FilePath, cachedFile.ExtraData));
+                yield break;
+            }
+        }
+#endif
+
+        LoadingMessage = $"Fetching replay from {sourceType}";
+
+        Task<ResolvedScore> resolveTask = ResolveReplayScoreAsync(sourceType, id, mapURL, mapID);
+        yield return new WaitUntil(() => resolveTask.IsCompleted);
+
+        ResolvedScore resolved = resolveTask.Result;
+        if(resolved == null || string.IsNullOrEmpty(resolved.ReplayURL))
+        {
+            Debug.Log($"Empty or nonexistent {sourceType} replay URL!");
+            SetMap(LoadedMap.Empty);
+            yield break;
+        }
+
+        if(resolved.SourceInfo != null)
+        {
+            ReplayManager.SourceInfo = resolved.SourceInfo;
+        }
+
+        string replayID = sourceType == ReplaySourceType.BeatLeader ? id : null;
+        Task<PreparedMapLoad> mapTask = PrepareMapLoadAsync(resolved, noProxy);
+        StartCoroutine(LoadReplayURLCoroutine(resolved.ReplayURL, replayID, resolved.MapURL, resolved.MapID, noProxy, mapTask));
+    }
+
+
+    private static Task<ResolvedScore> ResolveReplayScoreAsync(
+        ReplaySourceType sourceType, string id, string mapURL, string mapID, bool showErrors = true)
+    {
+        return sourceType switch
+        {
+            ReplaySourceType.BeatLeader => BeatLeaderSource.ResolveScoreAsync(id, mapURL, mapID, showErrors),
+            ReplaySourceType.ScoreSaber => ScoreSaberSource.ResolveScoreAsync(id, mapURL, mapID, showErrors),
+            _ => Task.FromResult<ResolvedScore>(null)
+        };
     }
 
 
@@ -694,6 +1013,13 @@ public class MapLoader : MonoBehaviour
 
             if(directory.EndsWith(".dat", StringComparison.InvariantCultureIgnoreCase))
             {
+                //Check if this is a ScoreSaber replay file
+                if(ScoreSaberDecoder.IsScoreSaberFile(directory))
+                {
+                    StartCoroutine(LoadReplayDirectoryCoroutine(directory));
+                    return;
+                }
+
                 //User is trying to load an unzipped map, get the parent directory
                 DirectoryInfo parentDir = Directory.GetParent(directory);
                 FileReader fileReader = new FileReader(parentDir.FullName);
@@ -780,10 +1106,59 @@ public class MapLoader : MonoBehaviour
 
         if(!ReplayManager.IsReplayMode && SettingsManager.GetBool("replaymode"))
         {
+            string replayInput = input.Trim();
+            const string scoreSaberPrefix = "ss:";
+            const string scoreSaberLongPrefix = "scoresaber:";
+            const string beatLeaderPrefix = "bl:";
+            const string beatLeaderLongPrefix = "beatleader:";
+
+            if(replayInput.StartsWith(scoreSaberPrefix, StringComparison.InvariantCultureIgnoreCase))
+            {
+                string scoreID = replayInput[scoreSaberPrefix.Length..].Trim();
+                if(!string.IsNullOrEmpty(scoreID) && scoreID.All(char.IsDigit))
+                {
+                    StartCoroutine(LoadScoreSaberReplayIDCoroutine(scoreID));
+                    UrlArgHandler.LoadedSSScoreId = scoreID;
+                    return;
+                }
+            }
+
+            if(replayInput.StartsWith(scoreSaberLongPrefix, StringComparison.InvariantCultureIgnoreCase))
+            {
+                string scoreID = replayInput[scoreSaberLongPrefix.Length..].Trim();
+                if(!string.IsNullOrEmpty(scoreID) && scoreID.All(char.IsDigit))
+                {
+                    StartCoroutine(LoadScoreSaberReplayIDCoroutine(scoreID));
+                    UrlArgHandler.LoadedSSScoreId = scoreID;
+                    return;
+                }
+            }
+
+            if(replayInput.StartsWith(beatLeaderPrefix, StringComparison.InvariantCultureIgnoreCase))
+            {
+                string scoreID = replayInput[beatLeaderPrefix.Length..].Trim();
+                if(!string.IsNullOrEmpty(scoreID) && scoreID.All(char.IsDigit))
+                {
+                    StartCoroutine(LoadReplayIDCoroutine(scoreID));
+                    UrlArgHandler.LoadedReplayID = scoreID;
+                    return;
+                }
+            }
+
+            if(replayInput.StartsWith(beatLeaderLongPrefix, StringComparison.InvariantCultureIgnoreCase))
+            {
+                string scoreID = replayInput[beatLeaderLongPrefix.Length..].Trim();
+                if(!string.IsNullOrEmpty(scoreID) && scoreID.All(char.IsDigit))
+                {
+                    StartCoroutine(LoadReplayIDCoroutine(scoreID));
+                    UrlArgHandler.LoadedReplayID = scoreID;
+                    return;
+                }
+            }
+
             if(!input.Any(x => !char.IsDigit(x)))
             {
-                StartCoroutine(LoadReplayIDCoroutine(input));
-                UrlArgHandler.LoadedReplayID = input;
+                StartCoroutine(LoadReplayIDAutoCoroutine(input));
                 return;
             }
         }
