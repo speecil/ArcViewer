@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Assets.__Scripts.Loading.Replays.PP;
 
 public class ScoreManager : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI gradeText;
     [SerializeField] private TextMeshProUGUI comboText;
     [SerializeField] private TextMeshProUGUI missText;
+    [SerializeField] private TextMeshProUGUI ppText;
 
     [Space]
     [SerializeField] private TextMeshProUGUI multiplierText;
@@ -85,6 +87,9 @@ public class ScoreManager : MonoBehaviour
         int misses = 0;
 
         int inferCount = 0;
+
+        float pp = PPManager.CalculatePP(1f, out string _);
+
         for(int i = 0; i < ScoringEvents.Count; i++)
         {
             ScoringEvent currentEvent = ScoringEvents[i];
@@ -473,6 +478,10 @@ public class ScoreManager : MonoBehaviour
         int currentComboMult;
         int currentComboProgress;
         int currentMisses;
+
+        float pp;
+        string ppShorthand = PPManager.GetPPShorthand();
+
         if(lastIndex >= 0)
         {
             ScoringEvent lastEvent = ScoringEvents[lastIndex];
@@ -485,12 +494,15 @@ public class ScoreManager : MonoBehaviour
             currentComboProgress = lastEvent.ComboProgress;
             currentMisses = lastEvent.Misses;
 
+            pp = PPManager.CalculatePP(currentPercentage / 100f, out ppShorthand);
+
             UpdateScoreIndicators(lastIndex);
         }
         else
         {
             currentScore = 0;
             currentPercentage = 100f;
+            pp = 0;
             currentFCPercentage = 100f;
             currentCombo = 0;
             currentComboMult = 0;
@@ -500,6 +512,7 @@ public class ScoreManager : MonoBehaviour
 
         comboText.text = currentCombo.ToString();
         missText.text = currentMisses.ToString();
+        ppText.text = $"{pp:F2}pp ({ppShorthand})";
 
         float effectivePercentage = currentPercentage * ReplayManager.ModifierMult;
         if(ReplayManager.HasFailed)
@@ -616,6 +629,15 @@ public class ScoreManager : MonoBehaviour
                 ErrorHandler.Instance.ShowPopup(ErrorType.Warning, "This is a legacy ScoreSaber replay. Some data is synthesised and may not be fully accurate.");
             }
 
+            bool showPP = SettingsManager.GetBool("showpp", true)
+                && ReplayManager.SourceInfo != null
+                && PPManager.CanCalculatePP();
+
+            if(ppText != null)
+            {
+                ppText.gameObject.SetActive(showPP);
+            }
+
             foreach(NoteEvent noteEvent in ReplayManager.CurrentReplay.notes)
             {
                 ScoringEvent newEvent = new ScoringEvent(noteEvent);
@@ -716,6 +738,17 @@ public class ScoreManager : MonoBehaviour
         {
             bool showFCPercentage = SettingsManager.GetBool("fcacc");
             fcPercentageText.gameObject.SetActive(showFCPercentage);
+        }
+
+        if(allSettings || setting == "showpp")
+        {
+            bool showPP = SettingsManager.GetBool("showpp", true)
+                && ReplayManager.SourceInfo != null
+                && PPManager.CanCalculatePP();
+            if(ppText != null)
+            {
+                ppText.gameObject.SetActive(showPP);
+            }
         }
     }
 

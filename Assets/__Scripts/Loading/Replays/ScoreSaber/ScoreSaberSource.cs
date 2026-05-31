@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using Assets.__Scripts.Loading.Replays.PP;
+using Assets.__Scripts.Loading.Replays.ScoreSaber.Utils;
 using UnityEngine;
 
 public static class ScoreSaberSource
@@ -30,6 +32,16 @@ public static class ScoreSaberSource
         }
 
         info.LoadSourceData = replay => LoadSourceDataAsync(info, replay);
+
+        if(response?.leaderboard?.realm != null)
+        {
+            if(response.leaderboard.realm.stars > 0)
+            {
+                ScoreSaberPPHandler.CurrentScoreSaberStars = response.leaderboard.realm.stars;
+                PPManager.RegisterProvider(new ScoreSaberPPHandler());
+            }
+        }
+
         return info;
     }
 

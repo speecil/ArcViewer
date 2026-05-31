@@ -125,6 +125,21 @@ public class ScoreSaberLeaderboardInfo
     public int id;
     public ScoreSaberMapInfo map;
     public ScoreSaberDifficultyInfo difficulty;
+    public Realm realm;
+}
+
+[Serializable]
+public class Realm
+{
+    public int realmId;
+    public string realmName;
+    public string leaderboardStatus;
+    public bool positiveModifiers;
+    public string modifierValues;
+    public float stars;
+    public string rankedAt;
+    public string qualifiedAt;
+    public string lovedAt;
 }
 
 [Serializable]
