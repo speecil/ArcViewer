@@ -1,8 +1,12 @@
 using System.Threading.Tasks;
+using Assets.__Scripts.Loading.Replays.PP;
+using Assets.__Scripts.Loading.Replays.ScoreSaber.Utils;
 using UnityEngine;
 
 public static class ScoreSaberSource
 {
+    public static ScoreSaberPPHandler PPHandler { get; private set;}
+
     public static ReplaySourceInfo Create(ScoreSaberScoreResponse response = null)
     {
         ScoreSaberPlayerInfo player = response?.GetPlayer();
@@ -30,6 +34,20 @@ public static class ScoreSaberSource
         }
 
         info.LoadSourceData = replay => LoadSourceDataAsync(info, replay);
+
+        if(response?.leaderboard?.realm != null)
+        {
+            if(PPHandler == null)
+            {
+                PPHandler = new ScoreSaberPPHandler(response.leaderboard.realm.stars);
+                PPManager.RegisterProvider(PPHandler);
+            }
+            else
+            {
+                PPHandler.SetScoreSaberStars(response.leaderboard.realm.stars);
+            }
+        }
+
         return info;
     }
 
