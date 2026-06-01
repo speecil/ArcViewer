@@ -512,7 +512,7 @@ public class ScoreManager : MonoBehaviour
 
         comboText.text = currentCombo.ToString();
         missText.text = currentMisses.ToString();
-        ppText.text = $"{pp:F2}pp ({ppShorthand})";
+        ppText.text = PPManager.CanCalculatePP() ? $"{PPManager.CalculatePP(currentPercentage / 100f, out string shorthand):F2}pp ({shorthand})" : "";
 
         float effectivePercentage = currentPercentage * ReplayManager.ModifierMult;
         if(ReplayManager.HasFailed)
@@ -588,6 +588,7 @@ public class ScoreManager : MonoBehaviour
         comboText.text = legacyCombo.ToString();
         missText.text = misses.ToString();
 
+        ppText.text = PPManager.CanCalculatePP() ? $"{PPManager.CalculatePP(percentage / 100f, out string shorthand):F2}pp ({shorthand})" : "";
         scorePercentageText.text = GetPercentageString(percentage);
         gradeText.text = GradeFromPercentage(percentage);
 

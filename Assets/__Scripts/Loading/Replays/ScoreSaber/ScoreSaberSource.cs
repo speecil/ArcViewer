@@ -5,6 +5,8 @@ using UnityEngine;
 
 public static class ScoreSaberSource
 {
+    public static ScoreSaberPPHandler PPHandler { get; private set;}
+
     public static ReplaySourceInfo Create(ScoreSaberScoreResponse response = null)
     {
         ScoreSaberPlayerInfo player = response?.GetPlayer();
@@ -35,10 +37,14 @@ public static class ScoreSaberSource
 
         if(response?.leaderboard?.realm != null)
         {
-            if(response.leaderboard.realm.stars > 0)
+            if(PPHandler == null)
             {
-                ScoreSaberPPHandler.CurrentScoreSaberStars = response.leaderboard.realm.stars;
-                PPManager.RegisterProvider(new ScoreSaberPPHandler());
+                PPHandler = new ScoreSaberPPHandler(response.leaderboard.realm.stars);
+                PPManager.RegisterProvider(PPHandler);
+            }
+            else
+            {
+                PPHandler.SetScoreSaberStars(response.leaderboard.realm.stars);
             }
         }
 

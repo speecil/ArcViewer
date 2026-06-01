@@ -9,12 +9,12 @@ namespace Assets.__Scripts.Loading.Replays.ScoreSaber.Utils
 {
     public class ScoreSaberPPHandler : IPPProvider
     {
-        public static float CurrentScoreSaberStars = 0;
+        private float CurrentScoreSaberStars = 0;
 
-        public static bool IsScoreSaberRanked => CurrentScoreSaberStars > 0;
+        public bool IsScoreSaberRanked => CurrentScoreSaberStars > 0;
 
-        private static float ScoreSaberStarValue = 42.117208413f;
-        private static Dictionary<float, float> ScoreSaberV3 = new Dictionary<float, float>()
+        private const float ScoreSaberStarValue = 42.117208413f;
+        private readonly Dictionary<float, float> ScoreSaberV3 = new Dictionary<float, float>()
         {
             {1, 5.367394282890631f},
             {0.9995f, 5.019543595874787f},
@@ -55,17 +55,27 @@ namespace Assets.__Scripts.Loading.Replays.ScoreSaber.Utils
             {0, 0}
         };
 
-        public bool CanHandle(ReplaySourceInfo source)
+        public ScoreSaberPPHandler(float ScoreSaberStars)
         {
-            return source != null && source.SourceType == ReplaySourceType.ScoreSaber && CurrentScoreSaberStars > 0f;
+            CurrentScoreSaberStars = ScoreSaberStars;
         }
 
-        static float Lerp(float v0, float v1, float t)
+        public void SetScoreSaberStars(float stars)
+        {
+            CurrentScoreSaberStars = stars;
+        }
+
+        public bool CanHandle(ReplaySourceInfo source)
+        {
+            return source != null && source.SourceType == ReplaySourceType.ScoreSaber && IsScoreSaberRanked;
+        }
+
+        float Lerp(float v0, float v1, float t)
         {
             return v0 + t * (v1 - v0);
         }
 
-        static float CalculatePPModifier(float lowerAcc, float lowerVal, float upperAcc, float upperVal, float acc)
+        float CalculatePPModifier(float lowerAcc, float lowerVal, float upperAcc, float upperVal, float acc)
         {
             if (Mathf.Approximately(upperAcc, lowerAcc)) return lowerVal;
             float t = (acc - lowerAcc) / (upperAcc - lowerAcc);
