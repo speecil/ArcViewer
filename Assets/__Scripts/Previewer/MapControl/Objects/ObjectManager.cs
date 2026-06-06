@@ -601,6 +601,7 @@ public class ObjectManager : MonoBehaviour
                         newNote.wasMissed = false;
                         newNote.WasBadCut = matchingEvent.noteEventType == NoteEventType.bad;
                         newNote.HitOffset = matchingEvent.HitTimeOffset;
+                        newNote.HitTime = matchingEvent.Time;
                     }
                     matchingEvent?.SetEventValues(scoringType, worldPosition);
 
@@ -667,6 +668,7 @@ public class ObjectManager : MonoBehaviour
                         newBomb.WasHit = true;
                         newBomb.WasBadCut = true;
                         newBomb.HitOffset = matchingEvent.ObjectTime - matchingEvent.Time;
+                        newBomb.HitTime = matchingEvent.Time;
 
                         Vector2 worldPosition = Instance.ObjectSpaceToWorldSpace(newBomb.Position);
                         matchingEvent.SetEventValues(ScoringType.NoScore, worldPosition);
@@ -786,6 +788,9 @@ public abstract class HitSoundEmitter : MapObject
     public bool wasMissed;
     public bool WasBadCut;
     public float HitOffset;
+    public float? HitTime;
+
+    public bool ShouldShowVisual => !WasHit || HitTime == null || TimeManager.CurrentTime < HitTime;
 }
 
 

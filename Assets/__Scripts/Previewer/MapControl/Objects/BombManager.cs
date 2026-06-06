@@ -134,7 +134,8 @@ public class BombManager : MapElementManager<Bomb>
                     RenderedObjects.Remove(b);
                 }
             }
-            else b.BombHandler.EnableVisual();
+            else if(b.ShouldShowVisual) b.BombHandler.EnableVisual();
+            else b.BombHandler.DisableVisual();
         }
     }
 
@@ -158,6 +159,10 @@ public class BombManager : MapElementManager<Bomb>
             if(jumpManager.CheckInSpawnRange(b.Time, b.CustomRT ?? jumpManager.ReactionTime, !b.WasHit, true, b.HitOffset))
             {
                 UpdateVisual(b);
+                if(!b.ShouldShowVisual)
+                {
+                    b.BombHandler.DisableVisual();
+                }
             }
             else if(!VisualInSpawnRange(b))
             {

@@ -262,7 +262,8 @@ public class NoteManager : MapElementManager<Note>
                     RenderedObjects.Remove(n);
                 }
             }
-            else n.NoteHandler.EnableVisual();
+            else if(n.ShouldShowVisual) n.NoteHandler.EnableVisual();
+            else n.NoteHandler.DisableVisual();
         }
     }
 
@@ -322,6 +323,10 @@ public class NoteManager : MapElementManager<Note>
             if(jumpManager.CheckInSpawnRange(n.Time, n.CustomRT ?? jumpManager.ReactionTime, !n.WasHit, true, n.HitOffset))
             {
                 UpdateVisual(n);
+                if(!n.ShouldShowVisual)
+                {
+                    n.NoteHandler.DisableVisual();
+                }
 
                 if(useChroma)
                 {
